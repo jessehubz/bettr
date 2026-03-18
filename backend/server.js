@@ -73,6 +73,38 @@ app.post("/api/transactions", async (req, res) => {
     }
 } )
 
+app.post("/api/transactions/summary/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params
+
+        const balanceResult = await sql `
+            SELECT COALESCE(SUM(amount), 0) as balance FROM transactions
+            WHERE user_id = ${userId}
+        `
+
+        const incomeResult = await sql `
+            SELECT COALESCE(SUM(amount), 0) as income FROM transactions
+            WHERE user_id = ${userId} AND amount > 0
+        `
+
+        const exxpensesResult = await sql `
+            SELECT COALESCE(SUM(amount), 0) as expenses FROM transactions
+            WHERE user_id = ${userId} AND amount < 0
+        `
+        
+        res.status(200).json({
+            balance: balanceResult[0].balance,
+            income: incomeResult[0].income,
+            expenses: exxpensesResult[0].expenses
+        })
+
+    } catch (error) {
+        console.log("Error creating the transaction", error)
+        res.status(500).json({ mesage: "Internal server error"});
+    }
+})
+
+
 app.delete("/api/transactions/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -105,7 +137,3 @@ initDB().then(() => {
         console.log("Server is up and running on PORT:", PORT)
     });
 })
-
-
-
-// test edit
